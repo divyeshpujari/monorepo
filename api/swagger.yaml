@@ -1,0 +1,297 @@
+swagger: "2.0"
+info:
+  description: "Monorepo demo system for Security Scan Result"
+  version: "1.0.0"
+  title: "Backend system Demo"
+host: "localhost:3000"
+basePath: "/api"
+tags:
+- name: "Status"
+  description: "Check the status of server"
+- name: "Security Scan Result"
+  description: "Security Scan Result related services"
+schemes:
+- "http"
+- "https"
+produces:
+- "application/json"
+consumes:
+- "application/json"
+paths:
+  /status:
+    get:
+      tags:
+      - "Status"
+      summary: "Allow user to check the status of the system"
+      description: "Check system status"
+      x-swagger-router-controller: "StatusController"
+      operationId: "getSystemStatus"
+      responses:
+        200:
+          description: "Success response structure of Status of system"
+          schema:
+            $ref: "#/definitions/status_response"
+        default:
+          $ref: "#/responses/default_error_response"
+  /scan-result:
+    post:
+      tags:
+      - "Security Scan Result"
+      summary: "Allow to create a new security scan result into the system"
+      description: "Create new security scan result into the system"
+      x-swagger-router-controller: "SecurityScanResultController"
+      operationId: "createSecurityScanResult"
+      parameters:
+      - $ref: "#/parameters/scan_result_create_payload"
+      responses:
+        201:
+          description: "Success response structure while security scan result successfully created in the system"
+          schema:
+            $ref: "#/definitions/scan_result_response_def"
+        default:
+          $ref: "#/responses/default_error_response"
+    get:
+      tags:
+        - "Security Scan Result"
+      summary: "Get created security scan result list from the system"
+      description: "Retrieves list of security scan result created in the system"
+      x-swagger-router-controller: "SecurityScanResultController"
+      operationId: "getSecurityScanResultList"
+      parameters:
+        - $ref: "#/parameters/filter_scan_repository_name"
+        - $ref: "#/parameters/page"
+        - $ref: "#/parameters/itemsPerPage"
+        - $ref: "#/parameters/scanResultSortBy"
+      responses:
+        200:
+          description: "Success response structure of get security scan result list from the system"
+          headers:
+            x-items-count:
+              type: integer
+              description: "Total number of records."
+            x-page-links:
+              type: string
+              description: "Link requires for support Pagination."
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/scan_result_response_def"
+        204:
+          $ref: "#/responses/no_content_found"
+        default:
+          $ref: "#/responses/default_error_response"
+  /scan-result/{result_id}:
+    parameters:
+    - $ref: "#/parameters/result_id"
+    x-swagger-router-controller: "SecurityScanResultController"
+    get:
+      tags:
+        - "Security Scan Result"
+      summary: "Retrieve specific security scan result record"
+      description: "Retrieve specific security scan result content from system"
+      operationId: "getScanResultContent"
+      responses:
+        200:
+          description: "Success response structure of get security scan result from the system"
+          schema:
+            $ref: "#/definitions/scan_result_response_def"
+        default:
+          $ref: "#/responses/default_error_response"
+definitions:
+  status_response:
+    type: "object"
+    properties:
+      message:
+        type: "string"
+      responseAt:
+        type: "string"
+        format: "date-time"
+    required:
+    - message
+    - responseAt
+  default_error_response:
+    type: "object"
+    properties:
+      code:
+        type: "string"
+      message:
+        type: "string"
+      errors:
+        type: "array"
+        items:
+          type: "object"
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            path:
+              type: array
+    required:
+    - message
+  scan_result_create_payload:
+    type: "object"
+    required:
+      - RepositoryName
+      - Status
+    properties:
+      RepositoryName:
+        type: string
+        minLength: 1
+      Status:
+        type: string
+        enum:
+          - Queued
+          - In Progress
+          - Success
+          - Failure
+      QueuedAt:
+        type: string
+        format: date-time
+      ScanningAt:
+        type: string
+        format: date-time
+      FinishedAt:
+        type: string
+        format: date-time
+      Findings:
+        type: array
+        items:
+          $ref: "#/definitions/scan_finding_def"
+    additionalProperties: false
+  scan_finding_def:
+    type: object
+    required:
+      - type
+      - ruleId
+      - location
+      - metadata
+    properties:
+      "type":
+        type: string
+        minLength: 1
+      ruleId:
+        type: string
+        minLength: 1
+      location:
+        type: object
+        required:
+          - path
+          - positions
+        properties:
+          path:
+            type: string
+            minLength: 1
+          positions:
+            type: object
+            required:
+              - begin
+            properties:
+              begin:
+                type: object
+                required:
+                  - line
+                properties:
+                  line:
+                    type: number
+      metadata:
+        type: object
+        required:
+          - severity
+        properties:
+          description:
+            type: string
+          severity:
+            type: string
+            minLength: 1
+  scan_result_response_def:
+    allOf:
+    - $ref: "#/definitions/mongoose_default_properties"
+    - $ref: "#/definitions/scan_result_create_payload"
+  mongoose_default_properties:
+    type: "object"
+    required:
+      - _id
+      - updatedAt
+      - createdAt
+      - __v
+    properties:
+      _id:
+        type: "string"
+        pattern: "^[a-f\\d]{24}$"
+      updatedAt:
+        type: "string"
+        format: date-time
+      createdAt:
+        type: "string"
+        format: date-time
+      __v:
+        type: integer
+parameters:
+  scan_result_create_payload:
+    name: "payload"
+    in: "body"
+    description: "Security scan result create payload"
+    required: true
+    schema:
+      $ref: "#/definitions/scan_result_create_payload"
+  result_id:
+    name: "result_id"
+    in: "path"
+    description: "Contains scan result id"
+    required: true
+    type: string
+    pattern: "^[a-f\\d]{24}$"
+  page:
+    name: "page"
+    in: "query"
+    description: "page number for pagination"
+    type: integer
+    default: 1
+    minimum: 1
+  itemsPerPage:
+    name: "itemsPerPage"
+    in: "query"
+    description: "Records per page in pagination"
+    type: integer
+    default: 20
+    minimum: 1
+  filter_scan_repository_name:
+    name: "RepositoryName"
+    in: "query"
+    description: "scan repository filter by name"
+    required: false
+    type: string
+    minLength: 1
+  scanResultSortBy:
+    name: sortBy
+    in: query
+    description: "Security scan result list sort by params. Eg. RepositoryName in inc order use `RepositoryName` and for desc use `-RepositoryName`"
+    type: array
+    items:
+      type: string
+      enum:
+        - "RepositoryName"
+        - "-RepositoryName"
+        - "Status"
+        - "-Status"
+        - "QueuedAt"
+        - "-QueuedAt"
+        - "ScanningAt"
+        - "-ScanningAt"
+        - "FinishedAt"
+        - "-FinishedAt"
+responses:
+  no_content_found:
+    description: "No content found"
+    headers:
+      x-items-count:
+        type: integer
+        description: "Total number of records."
+      x-page-links:
+        type: string
+        description: "Link requires for support Pagination."
+  default_error_response:
+    description: "Unsuccessful operation with any of the response status like 400, 401, 403, 404, 405, 406, 409, 412, 500"
+    schema:
+      $ref: "#/definitions/default_error_response"

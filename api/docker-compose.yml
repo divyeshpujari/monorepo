@@ -1,0 +1,20 @@
+version: "3.3"
+services:
+  app: # This service represent our node service
+    build: .
+    container_name: monorepo-backend-demo
+    ports:
+    - "3000:3000" # Docker container expose the service on port `3000` and host listen that on port `80`
+    depends_on:
+    - mongo
+    environment: # Process environment variables
+    - MONGO_URL=mongodb://mongo:27017/monorepoDb
+  mongo: # This service represent mongodb service
+    image: mongo:4.0.7
+    container_name: mongo
+    ports:
+    - "27017:27017" # Docker expose the service on `27017` default port of mongo and host listen on same
+    volumes:
+    - data-volume:/data/db # For Persist mongodb data after the container deleted
+volumes:
+  data-volume:

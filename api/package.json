@@ -20,7 +20,7 @@
   "author": "Divyesh",
   "license": "Unlicense",
   "dependencies": {
-    "async": "^3.1.0",
+    "async": "^3.2.2",
     "compression": "^1.7.4",
     "config": "3.2.1",
     "cors": "^2.8.5",
